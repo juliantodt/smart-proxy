@@ -32,23 +32,12 @@ module Proxy::PuppetCa
 
     def foreman_callback token
       logger.debug "Calling foreman with token " + token
-      uri              = URI.parse("#{Proxy::SETTINGS.foreman_url}/api/puppet_ca/token/" + token)
-      res              = Net::HTTP.new(uri.host, uri.port)
-      res.use_ssl      = true
-      res.ca_file      = Proxy::SETTINGS.foreman_ssl_ca
-      res.verify_mode  = OpenSSL::SSL::VERIFY_PEER
-      res.cert         = OpenSSL::X509::Certificate.new(File.read(Proxy::SETTINGS.foreman_ssl_cert))
-      res.key          = OpenSSL::PKey::RSA.new(File.read(Proxy::SETTINGS.foreman_ssl_key), nil)
-      res.open_timeout = Proxy::PuppetCa::Plugin.settings.tfmtimeout
-      res.read_timeout = Proxy::PuppetCa::Plugin.settings.tfmtimeout
-      req              = Net::HTTP::Delete.new(uri.request_uri)
+      req = Proxy::HttpRequest::ForemanRequest.request_factory.create_delete("api/puppet_ca/token", :id => token)
       begin
-        res.start do |http|
-          respone = http.request(req)
-          if response.code == 200
-            logger.debug "Autosigning CSR with token " + token
-            return true
-          end
+        response = Proxy::HttpRequest::ForemanRequest.send_request(req)
+        if response.code == 200
+          logger.debug "Autosigning CSR with token " + token
+          return true
         end
       rescue => e
         logger.debug "Error while calling foreman: " + e.to_s
