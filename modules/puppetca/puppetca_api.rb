@@ -15,34 +15,13 @@ module Proxy::PuppetCa
       end
     end
 
-    get "/autosign" do
+    post "/autosign" do
       content_type :json
+      csr = params[:csr]
       begin
-        Proxy::PuppetCa.autosign_list.to_json
+        Proxy::PuppetCa.autosign(csr)
       rescue => e
-        log_halt 406, "Failed to list autosign entries: #{e}"
-      end
-    end
-
-    post "/autosign/:certname" do
-      content_type :json
-      certname = params[:certname]
-      begin
-        Proxy::PuppetCa.autosign(certname)
-      rescue => e
-        log_halt 406, "Failed to enable autosign for #{certname}: #{e}"
-      end
-    end
-
-    delete "/autosign/:certname" do
-      content_type :json
-      certname = params[:certname]
-      begin
-        Proxy::PuppetCa.disable(certname)
-      rescue Proxy::PuppetCa::NotPresent => e
-        log_halt 404, e.to_s
-      rescue => e
-        log_halt 406, "Failed to remove autosign for #{certname}: #{e}"
+        log_halt 406, "Failed to check autosigning for CSR: #{e}"
       end
     end
 
